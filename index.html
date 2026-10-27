@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>下班万岁</title><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="brand" href="#"><span class="brand-icon">↗</span><span>下班万岁<small>OFF DUTY CLUB</small></span></a>
+      <div class="sidebar-label">把时间还给生活</div>
+      <nav aria-label="主导航">
+        <button class="nav-item active" data-tab="alarm"><span>◷</span> 下班闹钟</button>
+        <button class="nav-item" data-tab="themes"><span>✧</span> 动画放映室</button>
+        <button class="nav-item" data-tab="words"><span>☷</span> 人间清醒</button>
+      </nav>
+      <div class="sidebar-bottom"><span class="little-flower">✳</span><p>认真工作，<br>也要认真下班。</p><small>你的生活，才是主线任务。</small><span class="version">LOCAL & OFFLINE · v1.1</span></div>
+    </aside>
+    <main>
+      <header><div><div class="eyebrow">A LITTLE REMINDER TO LIVE</div><h1 id="page-title">今天，也要准点快乐。</h1><p id="page-description">给忙碌的一天，安排一个漂亮的句号。</p></div><span class="date" id="today"></span></header>
+      <section id="alarm-panel">
+        <div class="hero-card">
+          <div class="hero-copy"><span class="pill"><i></i><span id="alarm-status">尚未开启提醒</span></span><div class="count-label">距离下一次下班</div><div class="countdown" id="countdown">--<span>时</span>--<span>分</span>--<span>秒</span></div><p id="next-label">先给自己定一个下班时间吧</p></div>
+          <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="spark a">✧</span><span class="spark b">✳</span><div class="clock"><div class="clock-dot"></div><div class="hand hour"></div><div class="hand minute"></div><span class="clock-tick t1"></span><span class="clock-tick t2"></span><span class="clock-tick t3"></span><span class="clock-tick t4"></span></div><div class="art-label">LIFE IS CALLING ↗</div></div>
+        </div>
+        <div class="section-heading"><h2>我的下班计划 <span>01</span></h2><button class="text-button" id="pause">暂停提醒</button></div>
+        <div class="plan-card">
+          <div class="time-field"><label for="alarm-time">下班时间</label><input type="time" id="alarm-time" value="18:00" required><small>按电脑本地时间提醒</small></div>
+          <div class="repeat-field"><label for="repeat">什么时候接你下班？</label><select id="repeat"><option value="weekdays">每个工作日 · 周一至周五</option><option value="daily">每天 · 周一至周日</option><option value="custom">自定义星期</option><option value="once">仅下一次</option></select><div id="days" class="days" hidden></div><small>周一至周五模式不包含节假日、调休判断</small></div>
+          <button class="primary" id="activate">开启提醒 <span>↗</span></button>
+        </div>
+      </section>
+      <section id="theme-section">
+        <div class="section-heading"><h2>选一种下班方式 <span>02</span></h2><span class="muted">生活需要一点仪式感</span></div>
+        <div class="theme-grid" id="theme-grid"></div>
+      </section>
+      <section id="custom-section">
+        <div class="section-heading"><h2>让它更像你 <span>03</span></h2><span class="muted">你的下班，你来定义</span></div>
+        <div class="custom-card">
+          <div class="custom-top"><label>登场大字<input id="custom-title" maxlength="6" placeholder="下班"></label><label class="color-label">主题色<input type="color" id="accent" value="#deedb0"></label><label>停留时长<select id="duration"><option value="5">5 秒</option><option value="10">10 秒</option><option value="15">15 秒</option><option value="30">30 秒</option><option value="60">60 秒</option></select></label></div>
+          <label class="quote-label" for="quote">再送自己一句话 <span>留空使用主题文案</span></label><textarea id="quote" maxlength="100" rows="2" placeholder="今天的努力已存档，剩下的时间属于你。"></textarea>
+          <div class="options"><label class="check"><input type="checkbox" id="random-quote" checked> 随机一句人间清醒</label><label class="check"><input type="checkbox" id="sound" checked> 提示音</label><label class="check"><input type="checkbox" id="voice" checked> 语音读出来</label><label class="dim-label">遮罩 <input type="range" min="10" max="90" step="5" id="dim" value="70"><span id="dim-value">70%</span></label></div>
+        </div>
+      </section>
+      <section id="words-panel" hidden><div class="quote-intro">不贩卖焦虑，只提醒你：你值得好好休息。<br><small>点击一句话，作为下班提醒文案。</small></div><div id="quote-list"></div></section>
+      <footer><span id="save-status">设置自动保存在本机</span><button id="preview" class="preview-button">▷ <span>预演一下，提前快乐</span></button></footer>
+      <div class="browser-note" id="browser-note" hidden>当前为浏览器预览。请在 uTools 8.0+ 中导入 plugin.json，以启用后台定时与桌面全屏。</div>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <dialog id="preview-dialog"><iframe id="preview-frame" title="下班动画预演" allow="autoplay"></iframe><button id="close-preview" aria-label="关闭预演">×</button></dialog>
+  <script src="core.js"></script><script src="scenes.js"></script><script src="app.js"></script>
+</body>
+</html>
