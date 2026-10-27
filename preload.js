@@ -44,7 +44,6 @@ function showAnimation(input, preview) {
   const displays = utools.getAllDisplays();
   const current = utools.getDisplayNearestPoint(utools.getCursorScreenPoint());
   const audioIndex = Math.max(0, displays.findIndex(display => display.id === current.id));
-  let loaded = 0;
   try {
     displays.forEach((display, index) => {
       const bounds = display.bounds;
@@ -55,17 +54,13 @@ function showAnimation(input, preview) {
         minimizable: false, maximizable: false, fullscreenable: false, hasShadow: false,
         roundedCorners: false, enableLargerThanScreen: true,
         webPreferences: { preload: 'overlay-preload.js', backgroundThrottling: false }
-      }, () => {
-        if (group !== animationGroup || dismissing || win.isDestroyed()) return;
-        win.setBounds(bounds);
-        win.setAlwaysOnTop(true, 'screen-saver');
-        loaded++;
-        if (loaded === displays.length) {
-          overlays.forEach(window => { if (!window.isDestroyed()) window.show(); });
-          if (!overlays[audioIndex].isDestroyed()) overlays[audioIndex].focus();
-        }
       });
       overlays.push(win);
+      // 透明窗口直接显示，不依赖加载回调，避免页面有声音但窗口一直隐藏。
+      win.setBounds(bounds);
+      win.setAlwaysOnTop(true, 'screen-saver');
+      win.show();
+      if (index === audioIndex) win.focus();
     });
   } catch (error) {
     closeOverlays();

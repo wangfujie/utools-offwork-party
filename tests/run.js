@@ -43,7 +43,7 @@ test('首次使用默认勾选随机文案、提示音和语音，遮罩为70%',
 });
 
 // 用官方 API 形状模拟宿主，验证授权和窗口链路，不声称等同真机运行。
-function host(accept, displays = [{ id: 2, bounds: { x: -1920, y: 0, width: 1920, height: 1080 } }]) {
+function host(accept, displays = [{ id: 2, bounds: { x: -1920, y: 0, width: 1920, height: 1080 } }], loadCallbacks = true) {
   let entries = [{ code: 'offwork-alarm-old', trigger: { cron: '0 18 * * 1,2,3,4,5' } }];
   const storage = new Map();
   const events = {};
@@ -60,7 +60,9 @@ function host(accept, displays = [{ id: 2, bounds: { x: -1920, y: 0, width: 1920
     getDisplayNearestPoint: () => displays[0],
     createBrowserWindow: (url, options, callback) => {
       const win = { url, options, destroyed: false, messages: [], isDestroyed() { return this.destroyed; }, close() { this.destroyed = true; }, setBounds(bounds) { this.bounds = bounds; }, setAlwaysOnTop() {}, show() { this.visible = true; }, focus() {}, webContents: { send: channel => win.messages.push(channel) } };
-      windows.push(win); Promise.resolve().then(callback); return win;
+      windows.push(win);
+      if (loadCallbacks) Promise.resolve().then(callback);
+      return win;
     },
     hideMainWindow() {}, showNotification() {}
   };
@@ -134,6 +136,17 @@ test('新提醒替换全部旧屏幕窗口，旧窗口消息不影响新提醒',
   assert.strictEqual(old.destroyed, true);
   mock.events['offwork-close']({}, oldGroup);
   assert.strictEqual(mock.windows[1].messages.length, 0);
+});
+test('宿主未触发窗口加载回调时，多屏预演仍显示遮罩窗口', () => {
+  const mock = host(true, [
+    { id: 2, bounds: { x: -1920, y: 0, width: 1920, height: 1080 } },
+    { id: 1, bounds: { x: 0, y: 0, width: 2560, height: 1440 } }
+  ], false);
+  mock.services.preview(core.defaults);
+  assert.strictEqual(mock.windows.length, 2);
+  assert.ok(mock.windows.every(win => win.visible), '页面可以播放声音时，窗口也必须可见');
+  assert.strictEqual(mock.windows[0].bounds.x, -1920);
+  assert.strictEqual(mock.windows[1].bounds.width, 2560);
 });
 test('多个屏幕同时点击稍后提醒只创建一个任务', async () => {
   const mock = host(true);
