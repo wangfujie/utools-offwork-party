@@ -47,7 +47,7 @@ function save() {
     manager.save(settings);
     $('save-status').textContent = '✓ 草稿已保存 · 修改后需重新开启当前闹钟';
   } catch (error) { toast('保存失败：' + error.message); }
-  $('dim-value').textContent = settings.dim + '%';
+  updateDimControl();
   $('quote').disabled = settings.randomQuote;
   // 自定义文案优先于随机文案，启用随机时明确清空输入框。
   $('days').hidden = settings.repeat !== 'custom';
@@ -82,7 +82,7 @@ function load() {
   $('accent').value = settings.accent;
   $('duration').value = String(settings.duration);
   $('dim').value = settings.dim;
-  $('dim-value').textContent = settings.dim + '%';
+  updateDimControl();
   $('random-quote').checked = settings.randomQuote;
   $('quote').disabled = settings.randomQuote;
   $('sound').checked = settings.sound;
@@ -154,7 +154,25 @@ $('days').addEventListener('click', event => {
   selectedDays = selectedDays.includes(day) ? selectedDays.filter(value => value !== day) : selectedDays.concat(day);
   save(); renderDays();
 });
-['alarm-time', 'repeat', 'custom-title', 'quote', 'accent', 'duration', 'dim', 'sound', 'voice', 'mode', 'interval', 'start', 'end'].forEach(id => $(id).addEventListener('input', save));
+['alarm-time', 'repeat', 'custom-title', 'quote', 'accent', 'duration', 'sound', 'voice', 'mode', 'interval', 'start', 'end'].forEach(id => $(id).addEventListener('input', save));
+// 拖动时只更新数值和刻度，结束后保存；不重挂详情节点，保留浏览器拖动状态。
+function updateDimControl() {
+  const value = Number($('dim').value);
+  $('dim-value').textContent = value + '%';
+  $('dim').setAttribute('aria-valuetext', `背景暗度 ${value}%`);
+  $('dim-minus').disabled = value <= 10;
+  $('dim-plus').disabled = value >= 90;
+}
+function saveDim() {
+  try { settings = collect(); manager.save(settings); $('save-status').textContent = '✓ 草稿已保存 · 修改后需重新开启当前闹钟'; }
+  catch (error) { toast('保存失败：' + error.message); }
+}
+$('dim').addEventListener('input', updateDimControl);
+$('dim').addEventListener('change', saveDim);
+[['dim-minus', -5], ['dim-plus', 5]].forEach(([id, step]) => $(id).addEventListener('click', () => {
+  $('dim').value = Math.max(10, Math.min(90, Number($('dim').value) + step));
+  updateDimControl(); saveDim();
+}));
 $('random-quote').addEventListener('change', () => { if ($('random-quote').checked) $('quote').value = ''; save(); });
 $('activate').addEventListener('click', async () => {
   if (!$('alarm-time').value) return toast('请先设置有效的提醒时间');

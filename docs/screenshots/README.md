@@ -6,6 +6,7 @@
 | --- | --- |
 | alarm-list.png | 多闹钟列表、分类图标、动画开关和新版 Logo |
 | alarm-details.png | 展开后的闹钟详情局部 |
+| background-darkness.png | 背景暗度说明、刻度滑块和减／加微调按钮 |
 | animation-gallery.png | 十二种动画主题选择 |
 | quote-library.png | 分类文案库和逐句编辑操作 |
 | water-reminder.png | 喝水提醒动画预演 |

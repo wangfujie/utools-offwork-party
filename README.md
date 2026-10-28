@@ -20,6 +20,12 @@
 
 ![十二种动画主题](docs/screenshots/animation-gallery.png)
 
+### 背景暗度调节
+
+![背景暗度调节](docs/screenshots/background-darkness.png)
+
+数值越高，桌面越暗。滑块每格 5%，可连续拖动，或用减／加按钮、左右键微调；松手后自动保存草稿，重新开启当前闹钟后生效。
+
 ### 独立分类文案库
 
 ![逐句编辑和管理文案](docs/screenshots/quote-library.png)
