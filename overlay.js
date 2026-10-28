@@ -123,3 +123,5 @@ function draw(now) {
   if (!closing) frame = requestAnimationFrame(draw);
 }
 if (!reducedMotion) frame = requestAnimationFrame(draw);
+// 浏览器预演就绪后使用舞台自己的关闭按钮，避免显示两组关闭控件。
+if (window.parent !== window) window.parent.postMessage('offwork-ready', '*');

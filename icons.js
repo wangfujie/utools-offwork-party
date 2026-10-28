@@ -20,6 +20,8 @@
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     repeat: '<path d="m16 2 4 4-4 4M4 11V8a2 2 0 0 1 2-2h14M8 22l-4-4 4-4m12-1v3a2 2 0 0 1-2 2H4"/>',
     save: '<path d="M4 3h14l3 3v15H3V3Zm3 0v6h10V3M7 21v-8h10v8"/>',
+    edit: '<path d="m15 4 5 5M4 16 16 4q2-2 4 0t0 4L8 20l-5 1Z"/>',
+    close: '<path d="m6 6 12 12M18 6 6 18"/>',
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',
     pause: '<path d="M8 5v14M16 5v14"/>',
     sliders: '<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/>'
@@ -31,5 +33,5 @@
     button.innerHTML = window.FunIcons(name) + ' ' + label;
   });
   const save = document.querySelector('#library-form button[type="submit"]');
-  save.innerHTML = window.FunIcons('save') + ' 保存分类与语句';
+  save.innerHTML = window.FunIcons('save') + ' 保存分类信息';
 })();

@@ -178,6 +178,7 @@ $('preview').addEventListener('click', () => {
   try {
     if (native) return native.preview(settings);
     const data = { ...settings, preview: true, categoryName: (manager.categories()[settings.category] || {}).name, message: core.message(settings, undefined, manager.categories()) };
+    $('close-preview').hidden = false;
     $('preview-frame').src = 'overlay.html?data=' + encodeURIComponent(JSON.stringify(data));
     $('preview-dialog').showModal();
   } catch (error) { toast('预演失败：' + error.message); }
@@ -187,11 +188,12 @@ $('close-preview').addEventListener('click', closePreview);
 $('preview-dialog').addEventListener('cancel', () => { $('preview-frame').src = 'about:blank'; });
 window.addEventListener('message', event => {
   if (event.source === $('preview-frame').contentWindow && event.data === 'offwork-close') closePreview();
+  if (event.source === $('preview-frame').contentWindow && event.data === 'offwork-ready') $('close-preview').hidden = true;
 });
 function renderQuotes() {
   const category = manager.categories()[libraryCategory];
   const pool = category ? category.quotes : [];
-  $('quote-list').innerHTML = pool.map((quote, index) => `<div class="quote-pick"><span>${String(index + 1).padStart(2, '0')}</span>${escapeText(quote)}</div>`).join('');
+  $('quote-list').innerHTML = pool.map((quote, index) => `<form class="quote-pick" data-index="${index}"><span class="quote-number">${String(index + 1).padStart(2, '0')}</span><input class="quote-text" value="${escapeText(quote)}" maxlength="100" aria-label="第${index + 1}句文案" readonly required><div class="quote-actions"><button type="button" data-quote-edit aria-label="编辑第${index + 1}句" title="编辑">${icon('edit')}</button><button type="submit" data-quote-save hidden aria-label="保存第${index + 1}句" title="保存">${icon('check')}</button><button type="button" data-quote-cancel hidden aria-label="取消编辑" title="取消">${icon('close')}</button><button type="button" data-quote-delete aria-label="删除第${index + 1}句" title="删除">${icon('trash')}</button></div></form>`).join('');
 }
 $('today').textContent = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
 $('browser-note').hidden = !!native;
@@ -270,25 +272,67 @@ $('alarm-list').addEventListener('click', async event => {
 function loadLibrary(id) {
   libraryCategory = id;
   const categories = manager.categories();
-  $('library-tabs').innerHTML = Object.entries(categories).map(([key, c]) => `<button data-library="${key}" aria-pressed="${key === id}" class="${key === id ? 'active' : ''}">${icon(key)}${escapeText(c.name)} <small>${c.quotes.length}</small></button>`).join('');
+  renderLibraryTabs();
   const category = categories[id];
   $('library-name').value = category ? category.name : '';
   $('library-title').value = category ? category.title : '提醒';
-  $('library-quotes').value = category ? category.quotes.join('\n') : '';
-  $('library-count').textContent = category ? `${category.quotes.length} 句 · 每行一句，可直接增删修改` : '填写新分类及语句';
+  $('first-quote-label').hidden = !!category;
+  $('first-quote').required = !category; $('first-quote').value = '';
+  $('quote-add-form').hidden = !category; $('new-quote').value = '';
+  $('library-count').textContent = category ? `${category.quotes.length} 句 · 在下方列表逐句管理` : '填写分类信息与第一句提醒';
   $('delete-category').hidden = !id || Object.prototype.hasOwnProperty.call(core.quoteCategories, id);
   renderQuotes();
+}
+function renderLibraryTabs() {
+  $('library-tabs').innerHTML = Object.entries(manager.categories()).map(([key, c]) => `<button data-library="${key}" aria-pressed="${key === libraryCategory}" class="${key === libraryCategory ? 'active' : ''}">${icon(key)}${escapeText(c.name)} <small>${c.quotes.length}</small></button>`).join('');
 }
 $('library-tabs').addEventListener('click', event => { const button = event.target.closest('[data-library]'); if (button) loadLibrary(button.dataset.library); });
 $('new-category').addEventListener('click', () => loadLibrary(null));
 $('library-form').addEventListener('submit', event => {
   event.preventDefault();
-  try { const id = manager.saveCategory(libraryCategory, $('library-name').value, $('library-title').value, $('library-quotes').value.split('\n')); refreshCategories(); loadLibrary(id); toast('分类与语句已保存'); }
+  try { const category = manager.categories()[libraryCategory]; const id = manager.saveCategory(libraryCategory, $('library-name').value, $('library-title').value, category ? category.quotes : [$('first-quote').value]); refreshCategories(); loadLibrary(id); toast('分类信息已保存'); }
   catch (error) { toast(error.message); }
 });
 $('delete-category').addEventListener('click', () => {
   try { manager.removeCategory(libraryCategory); refreshCategories(); loadLibrary('offwork'); toast('分类已删除'); }
   catch (error) { toast(error.message); }
+});
+// 逐句保存到文案库；分类信息和其他语句不随编辑动作改变。
+function saveQuotes(quotes) {
+  const category = manager.categories()[libraryCategory];
+  if (!category) throw new Error('请先保存分类');
+  manager.saveCategory(libraryCategory, category.name, category.title, quotes);
+  $('library-count').textContent = `${manager.categories()[libraryCategory].quotes.length} 句 · 在下方列表逐句管理`;
+  renderLibraryTabs();
+  renderQuotes();
+}
+$('quote-add-form').addEventListener('submit', event => {
+  event.preventDefault();
+  try {
+    const quotes = manager.categories()[libraryCategory].quotes;
+    const text = $('new-quote').value.trim();
+    if (!text) throw new Error('请填写提醒语句');
+    if (quotes.includes(text)) throw new Error('这句话已经在分类中');
+    if (quotes.length >= 100) throw new Error('每个分类最多100句');
+    saveQuotes(quotes.concat(text)); $('new-quote').value = ''; toast('新语句已添加');
+  } catch (error) { toast(error.message); }
+});
+$('quote-list').addEventListener('click', event => {
+  const button = event.target.closest('button'); if (!button) return;
+  const row = button.closest('[data-index]'); const input = row.querySelector('input');
+  if (button.hasAttribute('data-quote-edit')) {
+    row.classList.add('editing'); input.readOnly = false;
+    row.querySelector('[data-quote-edit]').hidden = true; row.querySelector('[data-quote-save]').hidden = false; row.querySelector('[data-quote-cancel]').hidden = false;
+    input.focus();
+  }
+  if (button.hasAttribute('data-quote-cancel')) renderQuotes();
+  if (button.hasAttribute('data-quote-delete')) {
+    try { const quotes = manager.categories()[libraryCategory].quotes; if (quotes.length === 1) throw new Error('每个分类请至少保留一句文案'); saveQuotes(quotes.filter((q, i) => i !== Number(row.dataset.index))); toast('语句已删除'); } catch (error) { toast(error.message); }
+  }
+});
+$('quote-list').addEventListener('submit', event => {
+  event.preventDefault(); const row = event.target;
+  try { const text = row.querySelector('input').value.trim(); if (!text) throw new Error('语句不能为空'); const quotes = manager.categories()[libraryCategory].quotes.slice(); const index = Number(row.dataset.index); if (quotes.some((q, i) => i !== index && q === text)) throw new Error('这句话已经在分类中'); quotes[index] = text; saveQuotes(quotes); toast('语句已保存'); } catch (error) { toast(error.message); }
 });
 loadLibrary(libraryCategory);
 load(); refreshSchedules();

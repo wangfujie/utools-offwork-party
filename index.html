@@ -14,7 +14,7 @@
         <button class="nav-item" data-tab="themes" aria-label="动画放映室"><span data-icon="sparkle"></span><span class="nav-label">动画放映室</span></button>
         <button class="nav-item" data-tab="words" aria-label="人间清醒"><span data-icon="words"></span><span class="nav-label">人间清醒</span></button>
       </nav>
-      <div class="sidebar-bottom"><span class="little-flower">✳</span><p>准时提醒，<br>快乐发生。</p><small>你的生活，才是主线任务。</small><span class="version">LOCAL & OFFLINE · v1.5</span></div>
+      <div class="sidebar-bottom"><span class="little-flower">✳</span><p>准时提醒，<br>快乐发生。</p><small>你的生活，才是主线任务。</small><span class="version">LOCAL & OFFLINE · v1.2.0</span></div>
     </aside>
     <main>
       <header><div><div class="eyebrow">A LITTLE REMINDER TO LIVE</div><h1 id="page-title">让每次提醒，都有点惊喜。</h1><p id="page-description">下班、喝水、休息，让生活里的小事准时发生。</p></div><span class="date" id="today"></span></header>
@@ -55,7 +55,8 @@
         <div class="quote-intro">给每一种提醒，配一句合适的话。<br><small>独立管理所有分类和句子，闹钟开启随机文案后会从对应分类抽取。</small></div>
         <div class="section-heading"><h2>分类文案库</h2><button id="new-category" class="primary">＋ 新建分类</button></div>
         <div id="library-tabs" class="library-tabs"></div>
-        <form id="library-form" class="custom-card"><div class="custom-top"><label>分类名称<input id="library-name" maxlength="20" required></label><label>登场文字<input id="library-title" maxlength="6" required></label></div><label>语句 · 每行一句，最多100句<textarea id="library-quotes" rows="6" required></textarea></label><div class="section-heading"><span id="library-count" class="muted"></span><div><button type="button" id="delete-category" class="text-button">删除分类</button><button type="submit" class="primary">保存分类与语句</button></div></div></form>
+        <form id="library-form" class="custom-card"><div class="custom-top"><label>分类名称<input id="library-name" maxlength="20" required></label><label>登场文字<input id="library-title" maxlength="6" required></label></div><label id="first-quote-label" hidden>第一句提醒<input id="first-quote" maxlength="100" placeholder="写一句适合这个分类的提醒"></label><div class="section-heading"><span id="library-count" class="muted"></span><div><button type="button" id="delete-category" class="text-button">删除分类</button><button type="submit" class="primary">保存分类信息</button></div></div></form>
+        <form id="quote-add-form" class="quote-add"><label for="new-quote">给这个分类添一句话</label><div><input id="new-quote" maxlength="100" required placeholder="最多100字，把提醒写得有趣一点"><button type="submit" class="primary">＋ 新增一句</button></div></form>
         <div id="quote-list"></div>
       </section>
       <footer><span id="save-status">设置自动保存在本机</span><button id="preview" class="preview-button"><span data-icon="play"></span> <span>预演一下，提前快乐</span></button></footer>
