@@ -17,6 +17,17 @@
     const persist = () => storage.setItem(key, doc);
     const find = id => { const alarm = doc.alarms.find(a => a.id === id); if (!alarm) throw new Error('闹钟不存在'); return alarm; };
     const tasks = () => host ? host.getSchedules() : [];
+    // 分类文案独立保存；闹钟只引用分类，不改变文案库的浏览状态。
+    function categories() { return JSON.parse(JSON.stringify(Object.assign({}, core.quoteCategories, doc.library || {}))); }
+    function saveCategory(id, name, title, quotes) {
+      name = String(name).trim().slice(0, 20); title = String(title).trim().slice(0, 6);
+      const clean = [...new Set(quotes.map(q => String(q).trim().slice(0, 100)).filter(Boolean))].slice(0, 100);
+      if (!name || !title || !clean.length) throw new Error('请填写分类名、登场文字及至少一句文案');
+      if (!id) id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      if (!/^[a-z0-9-]+$/.test(id) || !Object.prototype.hasOwnProperty.call(categories(), id) && !id.startsWith('c')) throw new Error('分类标识无效');
+      if (!doc.library) doc.library = {};
+      doc.library[id] = { name, title, quotes: clean }; persist(); return id;
+    }
     function save(input) { find(doc.selected).draft = core.normalize(input); persist(); }
     function pause(id) {
       const alarm = find(id);
@@ -44,6 +55,12 @@
       return alarm && { id: alarm.id, settings: alarm.active };
     }
     return {
+      categories, saveCategory,
+      removeCategory: id => {
+        if (Object.prototype.hasOwnProperty.call(core.quoteCategories, id)) throw new Error('内置分类可以编辑，不能删除');
+        if (doc.alarms.some(a => a.draft.category === id || a.active && a.active.category === id) || Object.values(doc.snoozes).some(s => s.settings.category === id)) throw new Error('分类正被闹钟使用，请先更换闹钟分类');
+        if (doc.library) delete doc.library[id]; persist();
+      },
       read: () => find(doc.selected).draft,
       save, activate,
       list: () => { const a = find(doc.selected); return tasks().filter(t => a.codes.includes(t.code) || (doc.snoozes[t.code] || {}).id === a.id); },

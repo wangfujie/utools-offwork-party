@@ -44,7 +44,8 @@ function dismissOverlays(group) {
 // 为全部显示器分别创建透明窗口，按各自 DIP 边界覆盖，音频只在鼠标屏播放。
 function showAnimation(input, preview) {
   const settings = core.normalize(input || read());
-  settings.message = core.message(settings);
+  settings.message = core.message(settings, undefined, alarmStore.categories());
+  settings.categoryName = (alarmStore.categories()[settings.category] || {}).name;
   settings.preview = !!preview; activeReminder = settings;
   closeOverlays();
   const group = ++animationGroup;

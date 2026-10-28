@@ -163,7 +163,7 @@ test('多个屏幕同时点击稍后提醒只创建一个任务', async () => {
 });
 test('manifest 的所有入口文件都存在', () => {
   const manifest = require('../plugin.json');
-  [manifest.main, manifest.preload, manifest.logo, 'alarms.js', 'overlay.html', 'overlay-preload.js'].forEach(file => assert.ok(fs.existsSync(require('path').join(__dirname, '..', file)), file));
+  [manifest.main, manifest.preload, manifest.logo, 'alarms.js', 'extra-scenes.js', 'extra-animations.css', 'overlay.html', 'overlay-preload.js'].forEach(file => assert.ok(fs.existsSync(require('path').join(__dirname, '..', file)), file));
 });
 test('多个闹钟独立启用、暂停和删除，触发使用各自已授权配置', async () => {
   const mock = host(true);
@@ -237,6 +237,30 @@ test('多个闹钟同时触发时排队，第一条关闭后再播放第二条',
   assert.strictEqual(mock.windows.length, 2);
   assert.strictEqual(mock.windows[0].destroyed, true);
   assert.strictEqual(JSON.parse(decodeURIComponent(mock.windows[1].url.split('data=')[1])).title, '活动');
+});
+test('文案库可新增和修改分类，随机文案实际使用自定义分类', () => {
+  const mock = host(true);
+  const id = mock.services.saveCategory(null, '项目回顾', '回顾', ['保存进展', '检查待办', '保存进展']);
+  assert.strictEqual(mock.services.categories()[id].quotes.length, 2);
+  mock.services.preview({ category: id, title: '回顾', randomQuote: true });
+  const payload = JSON.parse(decodeURIComponent(mock.windows[0].url.split('data=')[1]));
+  assert.ok(['保存进展', '检查待办'].includes(payload.message));
+  assert.strictEqual(payload.categoryName, '项目回顾');
+  mock.services.saveCategory(id, '每日回顾', '回顾', ['更新后的语句']);
+  assert.strictEqual(core.message({ category: id, randomQuote: true }, 0, mock.services.categories()), '更新后的语句');
+  assert.throws(() => mock.services.saveCategory(id, '无效分类', '提醒', []), /至少一句/);
+  mock.services.removeCategory(id);
+  assert.strictEqual(mock.services.categories()[id], undefined);
+});
+test('文案库引用保护和内置分类保护，编辑不污染内置默认值', async () => {
+  const mock = host(true);
+  const original = core.quoteCategories.water.quotes[0];
+  mock.services.saveCategory('water', '喝水', '喝水', ['补充一点水']);
+  assert.strictEqual(core.quoteCategories.water.quotes[0], original);
+  assert.throws(() => mock.services.removeCategory('water'), /内置/);
+  const id = mock.services.saveCategory(null, '自建分类', '提醒', ['你好']);
+  mock.services.add('我的提醒', { category: id });
+  assert.throws(() => mock.services.removeCategory(id), /使用/);
 });
 
 (async () => {

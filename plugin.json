@@ -4,7 +4,7 @@
   "preload": "preload.js",
   "pluginSetting": { "single": true, "height": 640 },
   "features": [
-    { "code": "offwork-settings", "description": "趣味闹钟：设置定时提醒与动画主题", "cmds": ["趣味闹钟", "定时提醒", "下班闹钟", "下班提醒"] },
+    { "code": "offwork-settings", "description": "喝水、活动、下班，用趣味动画准时提醒，让忙碌的一天多一点轻松。", "cmds": ["趣味闹钟", "定时提醒", "下班闹钟", "下班提醒"] },
     { "code": "offwork-preview", "description": "立即预演当前提醒动画", "cmds": ["闹钟预演", "我要下班", "下班动画"], "mainHide": true }
   ]
 }

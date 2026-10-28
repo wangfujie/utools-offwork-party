@@ -9,7 +9,13 @@
     { id: 'dragon', name: '金龙赐闲', tag: '奉旨躺平', color: '#f4d48c', line: '本龙掐指一算：今日宜下班，忌内耗。', desc: '金龙腾云 · 奉旨准点收工', icon: '龍' },
     { id: 'sword', name: '御剑下班', tag: '修仙不修班', color: '#b5d8f6', line: '道友，今日功德已满，随我御剑归家。', desc: '仙人御剑 · 把烦恼留在云后', icon: '⚔' },
     { id: 'cat', name: '猫猫躺平', tag: '摸鱼有理', color: '#e3c5ed', line: '猫都睡了，你还卷什么？快回家给自己充电。', desc: '猫猫打盹 · 温柔劝你休息', icon: 'ฅ' },
-    { id: 'sunset', name: '落日归途', tag: '温柔治愈', color: '#ffc39f', line: '工作有尽头，生活有盼头。去赶一场晚霞吧。', desc: '落日缓降 · 把时间还给生活', icon: '◒' }
+    { id: 'sunset', name: '落日归途', tag: '温柔治愈', color: '#ffc39f', line: '工作有尽头，生活有盼头。去赶一场晚霞吧。', desc: '落日缓降 · 把时间还给生活', icon: '◒' },
+    { id: 'water', name: '水杯加油站', tag: '喝水时间', color: '#a8dfe6', line: '喝口水，给自己补充一点活力。', desc: '水波摇晃 · 气泡向上', icon: '◉' },
+    { id: 'stretch', name: '伸个懒腰', tag: '起身活动', color: '#f1c39a', line: '站起来动一动，换个姿势再出发。', desc: '小人伸展 · 活力登场', icon: '↟' },
+    { id: 'forest', name: '远方森林', tag: '眼睛放假', color: '#add3ac', line: '看看远方，让眼睛休息片刻。', desc: '林间微风 · 叶片轻摇', icon: '♧' },
+    { id: 'meal', name: '热饭开席', tag: '补充能量', color: '#f4d4a2', line: '该吃饭了，生活也要热气腾腾。', desc: '饭碗弹入 · 热气升腾', icon: '◡' },
+    { id: 'sunrise', name: '午后唤醒', tag: '精神上线', color: '#f4bf98', line: '伸个懒腰，带着好心情重新出发。', desc: '太阳升起 · 光芒呼吸', icon: '☀' },
+    { id: 'rocket', name: '待办发射', tag: '下一站出发', color: '#c6b5ed', line: '约定的时间到了，准备好下一项安排。', desc: '火箭升空 · 尾焰闪动', icon: '↑' }
   ];
   const quotes = [
     '今天的努力已存档，剩下的时间属于你。', '工资买的是你的时间，不是你的整个人生。',
@@ -88,13 +94,13 @@
     return { code, label: `趣味闹钟 · ${settings.time}`, trigger };
   }
 
-  function message(settings, random) {
+  function message(settings, random, library = quoteCategories) {
     if (settings.quote) return settings.quote;
     if (settings.randomQuote) {
-      const pool = (quoteCategories[settings.category] || quoteCategories.offwork).quotes;
+      const pool = (library[settings.category] || library.offwork).quotes;
       return pool[Math.floor((random === undefined ? Math.random() : random) * pool.length) % pool.length];
     }
-    if (settings.category && settings.category !== 'offwork' && quoteCategories[settings.category]) return quoteCategories[settings.category].quotes[0];
+    if (settings.category && settings.category !== 'offwork' && library[settings.category]) return library[settings.category].quotes[0];
     return themes.find(t => t.id === settings.theme).line;
   }
 

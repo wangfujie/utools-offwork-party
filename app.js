@@ -10,6 +10,17 @@ let settings = core.normalize(storedSettings);
 let selectedDays = settings.days.slice();
 let toastTimer;
 let schedules = [];
+let expandedAlarm = null;
+let libraryCategory = 'offwork';
+const details = document.createElement('section');
+details.id = 'alarm-details'; details.hidden = true;
+const editor = document.querySelector('.alarm-editor');
+const hero = document.querySelector('.hero-card');
+const planHeading = hero.nextElementSibling;
+const themeSection = $('theme-section');
+const footer = document.querySelector('footer');
+details.append(editor, hero, planHeading, document.querySelector('.plan-card'), themeSection, $('custom-section'), footer);
+$('alarm-panel').append(details);
 const backgrounds = { confetti: '#edf0df', hero: '#f6e5df', dragon: '#f5ecda', sword: '#e4edf1', cat: '#eee5f0', sunset: '#f4e7dc' };
 
 function toast(message) {
@@ -44,8 +55,8 @@ function save() {
 }
 
 function renderThemes() {
-  $('theme-grid').innerHTML = core.themes.map(theme => `<button class="theme-card ${settings.theme === theme.id ? 'selected' : ''}" data-theme="${theme.id}" aria-pressed="${settings.theme === theme.id}" style="--card-bg:${backgrounds[theme.id]}"><div class="theme-art"><span class="theme-tag">${theme.tag}</span>${window.OffworkScenes.svg(theme.id)}<span class="selected-mark">✓</span></div><div class="theme-info"><strong>${theme.name}</strong><p>${theme.desc}</p></div></button>`).join('');
-  $('quote').placeholder = (core.quoteCategories[settings.category] || core.quoteCategories.offwork).quotes[0];
+  $('theme-grid').innerHTML = core.themes.map(theme => `<button class="theme-card ${settings.theme === theme.id ? 'selected' : ''}" data-theme="${theme.id}" aria-pressed="${settings.theme === theme.id}" style="--card-bg:${backgrounds[theme.id] || theme.color + "45"}"><div class="theme-art"><span class="theme-tag">${theme.tag}</span>${window.OffworkScenes.svg(theme.id)}<span class="selected-mark">✓</span></div><div class="theme-info"><strong>${theme.name}</strong><p>${theme.desc}</p></div></button>`).join('');
+  $('quote').placeholder = (manager.categories()[settings.category] || manager.categories().offwork).quotes[0];
 }
 
 function renderDays() {
@@ -115,11 +126,13 @@ function tick() {
 function setTab(tab) {
   document.querySelectorAll('.nav-item').forEach(button => button.classList.toggle('active', button.dataset.tab === tab));
   $('alarm-panel').hidden = tab !== 'alarm';
-  $('theme-section').hidden = tab === 'words';
-  $('custom-section').hidden = tab === 'words';
+  if (tab === 'themes') { $('words-panel').before(themeSection, footer); }
+  else { details.append(themeSection, $('custom-section'), footer); }
+  themeSection.hidden = false;
+  footer.hidden = tab === 'words';
   $('words-panel').hidden = tab !== 'words';
   $('page-title').textContent = { alarm: '让每次提醒，都有点惊喜。', themes: '提醒，也要闪亮登场。', words: '别太累，你已经很棒了。' }[tab];
-  $('page-description').textContent = { alarm: '下班、喝水、休息，让生活里的小事准时发生。', themes: '选一个趣味搭子，把提醒变成小小的惊喜。', words: '一些温柔的话，送给努力生活的你。' }[tab];
+  $('page-description').textContent = { alarm: '所有闹钟一眼看清，点击卡片展开详情。', themes: '为当前编辑的闹钟选择动画：' + $('alarm-name').value, words: '浏览和编辑全部分类，不随闹钟切换。' }[tab];
 }
 
 document.querySelectorAll('.nav-item').forEach(button => button.addEventListener('click', () => setTab(button.dataset.tab)));
@@ -161,7 +174,7 @@ $('preview').addEventListener('click', () => {
   settings = collect();
   try {
     if (native) return native.preview(settings);
-    const data = { ...settings, preview: true, message: core.message(settings) };
+    const data = { ...settings, preview: true, categoryName: (manager.categories()[settings.category] || {}).name, message: core.message(settings, undefined, manager.categories()) };
     $('preview-frame').src = 'overlay.html?data=' + encodeURIComponent(JSON.stringify(data));
     $('preview-dialog').showModal();
   } catch (error) { toast('预演失败：' + error.message); }
@@ -173,32 +186,48 @@ window.addEventListener('message', event => {
   if (event.source === $('preview-frame').contentWindow && event.data === 'offwork-close') closePreview();
 });
 function renderQuotes() {
-  const pool = (core.quoteCategories[settings.category] || core.quoteCategories.offwork).quotes;
-  $('quote-list').innerHTML = pool.map((quote, index) => `<button class="quote-pick" data-quote="${index}"><span>${String(index + 1).padStart(2, '0')}</span>${quote}</button>`).join('');
+  const category = manager.categories()[libraryCategory];
+  const pool = category ? category.quotes : [];
+  $('quote-list').innerHTML = pool.map((quote, index) => `<div class="quote-pick"><span>${String(index + 1).padStart(2, '0')}</span>${escapeText(quote)}</div>`).join('');
 }
-$('quote-list').addEventListener('click', event => {
-  const button = event.target.closest('[data-quote]');
-  if (!button) return;
-  $('quote').value = (core.quoteCategories[settings.category] || core.quoteCategories.offwork).quotes[Number(button.dataset.quote)];
-  $('random-quote').checked = false;
-  save(); toast('这句话已经加入你的定时提醒。');
-});
 $('today').textContent = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
 $('browser-note').hidden = !!native;
-$('category').innerHTML = Object.entries(core.quoteCategories).map(([id, category]) => `<option value="${id}">${category.name}</option>`).join('');
+function refreshCategories() {
+  const selected = $('category').value || settings.category || 'offwork';
+  $('category').innerHTML = Object.entries(manager.categories()).map(([id, category]) => `<option value="${id}">${escapeText(category.name)}</option>`).join('');
+  $('category').value = selected;
+}
+refreshCategories();
 function escapeText(text) { const node = document.createElement('span'); node.textContent = text; return node.innerHTML; }
 function renderAlarms() {
-  $('alarm-list').innerHTML = manager.all().map(alarm => `<article class="alarm-row ${alarm.id === manager.selected() ? 'chosen' : ''}"><button data-edit="${alarm.id}"><strong>${escapeText(alarm.name)}</strong><small>${alarm.draft.mode === 'interval' ? `每 ${alarm.draft.interval} 分钟 · ${alarm.draft.start}–${alarm.draft.end}` : alarm.draft.time} · ${alarm.enabled ? '已开启' : '未开启'}</small></button><button data-toggle="${alarm.id}">${alarm.enabled ? '暂停' : '开启'}</button><button data-remove="${alarm.id}">删除</button></article>`).join('');
+  const focused = details.contains(document.activeElement) ? document.activeElement : null;
+  details.remove();
+  $('alarm-list').innerHTML = manager.all().map(alarm => {
+    const data = alarm.enabled ? alarm.active : alarm.draft;
+    const category = manager.categories()[data.category || 'offwork'];
+    return `<article class="alarm-row ${alarm.id === expandedAlarm ? 'chosen' : ''}" data-row="${alarm.id}"><button data-edit="${alarm.id}" aria-expanded="${alarm.id === expandedAlarm}" aria-controls="alarm-details"><span class="alarm-category">${escapeText(category ? category.name : '提醒')}</span><strong>${escapeText(alarm.name)}</strong><small>${data.mode === 'interval' ? `每 ${data.interval} 分钟 · ${data.start}–${data.end}` : data.time} · ${alarm.enabled ? '已开启' : '未开启'} · ${alarm.id === expandedAlarm ? '收起详情 ▴' : '展开详情 ▾'}</small></button><button data-toggle="${alarm.id}">${alarm.enabled ? '暂停' : '开启'}</button><button data-remove="${alarm.id}">删除</button></article>`;
+  }).join('');
+  const row = expandedAlarm && $('alarm-list').querySelector(`[data-row="${expandedAlarm}"]`);
+  details.hidden = !row;
+  if (row) row.after(details); else $('alarm-panel').append(details);
+  if (focused) focused.focus({ preventScroll: true });
 }
 function selectAlarm(id) { manager.select(id); settings = core.normalize(manager.read()); selectedDays = settings.days.slice(); load(); refreshSchedules(); }
+function expandAlarm(id) {
+  expandedAlarm = expandedAlarm === id ? null : id;
+  selectAlarm(id);
+  if (expandedAlarm && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) details.animate([{ opacity: 0, transform: 'translateY(-14px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 260, easing: 'ease-out' });
+}
 $('new-alarm').addEventListener('click', () => {
-  const id = manager.add('新的提醒', { ...core.defaults, category: 'custom', title: '提醒' }); selectAlarm(id);
+  const id = manager.add('新的提醒', { ...core.defaults, category: 'custom', title: '提醒' }); expandedAlarm = id; selectAlarm(id);
   $('alarm-name').focus();
 });
 $('alarm-name').addEventListener('input', () => { manager.rename($('alarm-name').value); renderAlarms(); });
 $('category').addEventListener('change', () => {
   const category = $('category').value;
-  $('custom-title').value = core.quoteCategories[category].title;
+  $('custom-title').value = manager.categories()[category].title;
+  const suggested = { water: 'water', movement: 'stretch', eyes: 'forest', lunch: 'meal', nap: 'sunrise', meeting: 'rocket', offwork: 'confetti' }[category];
+  if (suggested) { settings.theme = suggested; $('accent').value = core.themes.find(t => t.id === suggested).color; renderThemes(); }
   $('quote').value = ''; $('random-quote').checked = true;
   if (['water', 'movement', 'eyes'].includes(category)) { $('mode').value = 'interval'; $('interval').value = category === 'eyes' ? 20 : 60; }
   else $('mode').value = 'fixed';
@@ -208,10 +237,10 @@ $('category').addEventListener('change', () => {
 });
 $('alarm-list').addEventListener('click', async event => {
   const button = event.target.closest('button'); if (!button) return;
-  if (button.dataset.edit) return selectAlarm(button.dataset.edit);
+  if (button.dataset.edit) return expandAlarm(button.dataset.edit);
   button.disabled = true;
   try {
-    if (button.dataset.remove) { manager.remove(button.dataset.remove); selectAlarm(manager.selected()); }
+    if (button.dataset.remove) { manager.remove(button.dataset.remove); if (expandedAlarm === button.dataset.remove) expandedAlarm = null; selectAlarm(manager.selected()); }
     if (button.dataset.toggle) {
       const id = button.dataset.toggle;
       const alarm = manager.all().find(a => a.id === id);
@@ -222,6 +251,31 @@ $('alarm-list').addEventListener('click', async event => {
   } catch (error) { toast(error.message); renderAlarms(); }
   finally { button.disabled = false; }
 });
+// 文案库有独立的浏览分类和编辑表单，不写入当前闹钟草稿。
+function loadLibrary(id) {
+  libraryCategory = id;
+  const categories = manager.categories();
+  $('library-tabs').innerHTML = Object.entries(categories).map(([key, c]) => `<button data-library="${key}" aria-pressed="${key === id}" class="${key === id ? 'active' : ''}">${escapeText(c.name)} <small>${c.quotes.length}</small></button>`).join('');
+  const category = categories[id];
+  $('library-name').value = category ? category.name : '';
+  $('library-title').value = category ? category.title : '提醒';
+  $('library-quotes').value = category ? category.quotes.join('\n') : '';
+  $('library-count').textContent = category ? `${category.quotes.length} 句 · 每行一句，可直接增删修改` : '填写新分类及语句';
+  $('delete-category').hidden = !id || Object.prototype.hasOwnProperty.call(core.quoteCategories, id);
+  renderQuotes();
+}
+$('library-tabs').addEventListener('click', event => { const button = event.target.closest('[data-library]'); if (button) loadLibrary(button.dataset.library); });
+$('new-category').addEventListener('click', () => loadLibrary(null));
+$('library-form').addEventListener('submit', event => {
+  event.preventDefault();
+  try { const id = manager.saveCategory(libraryCategory, $('library-name').value, $('library-title').value, $('library-quotes').value.split('\n')); refreshCategories(); loadLibrary(id); toast('分类与语句已保存'); }
+  catch (error) { toast(error.message); }
+});
+$('delete-category').addEventListener('click', () => {
+  try { manager.removeCategory(libraryCategory); refreshCategories(); loadLibrary('offwork'); toast('分类已删除'); }
+  catch (error) { toast(error.message); }
+});
+loadLibrary(libraryCategory);
 load(); refreshSchedules();
 setInterval(tick, 1000);
 window.addEventListener('offwork-enter', refreshSchedules);
