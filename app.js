@@ -134,7 +134,7 @@ function setTab(tab) {
   themeSection.hidden = false;
   footer.hidden = tab === 'words';
   $('words-panel').hidden = tab !== 'words';
-  $('page-title').textContent = { alarm: '让每次提醒，都有点惊喜。', themes: '提醒，也要闪亮登场。', words: '别太累，你已经很棒了。' }[tab];
+  $('page-title').textContent = { alarm: '让每次提醒，都有点惊喜。', themes: '提醒，也要闪亮登场。', words: '每种提醒，都有一句贴心话。' }[tab];
   $('page-description').textContent = { alarm: '所有闹钟一眼看清，点击卡片展开详情。', themes: '为当前编辑的闹钟选择动画：' + $('alarm-name').value, words: '浏览和编辑全部分类，不随闹钟切换。' }[tab];
 }
 
