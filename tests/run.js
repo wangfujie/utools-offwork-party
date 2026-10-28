@@ -163,7 +163,7 @@ test('多个屏幕同时点击稍后提醒只创建一个任务', async () => {
 });
 test('manifest 的所有入口文件都存在', () => {
   const manifest = require('../plugin.json');
-  [manifest.main, manifest.preload, manifest.logo, 'alarms.js', 'extra-scenes.js', 'extra-animations.css', 'overlay.html', 'overlay-preload.js'].forEach(file => assert.ok(fs.existsSync(require('path').join(__dirname, '..', file)), file));
+  [manifest.main, manifest.preload, manifest.logo, 'alarms.js', 'icons.js', 'ui.css', 'extra-scenes.js', 'extra-animations.css', 'overlay.html', 'overlay-preload.js'].forEach(file => assert.ok(fs.existsSync(require('path').join(__dirname, '..', file)), file));
 });
 test('多个闹钟独立启用、暂停和删除，触发使用各自已授权配置', async () => {
   const mock = host(true);

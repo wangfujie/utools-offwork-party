@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>趣味闹钟</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="extra-animations.css">
+  <title>趣味闹钟</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="extra-animations.css"><link rel="stylesheet" href="ui.css">
 </head>
 <body>
   <div class="shell">
@@ -10,16 +10,17 @@
       <a class="brand" href="#"><img class="brand-logo" src="logo.png" width="42" height="42" alt="趣味闹钟图标"><span>趣味闹钟<small>FUN ALARM</small></span></a>
       <div class="sidebar-label">把时间还给生活</div>
       <nav aria-label="主导航">
-        <button class="nav-item active" data-tab="alarm"><span>◷</span> 闹钟管理</button>
-        <button class="nav-item" data-tab="themes"><span>✧</span> 动画放映室</button>
-        <button class="nav-item" data-tab="words"><span>☷</span> 人间清醒</button>
+        <button class="nav-item active" data-tab="alarm" aria-label="闹钟管理"><span data-icon="alarm"></span><span class="nav-label">闹钟管理</span></button>
+        <button class="nav-item" data-tab="themes" aria-label="动画放映室"><span data-icon="sparkle"></span><span class="nav-label">动画放映室</span></button>
+        <button class="nav-item" data-tab="words" aria-label="人间清醒"><span data-icon="words"></span><span class="nav-label">人间清醒</span></button>
       </nav>
-      <div class="sidebar-bottom"><span class="little-flower">✳</span><p>准时提醒，<br>快乐发生。</p><small>你的生活，才是主线任务。</small><span class="version">LOCAL & OFFLINE · v1.4</span></div>
+      <div class="sidebar-bottom"><span class="little-flower">✳</span><p>准时提醒，<br>快乐发生。</p><small>你的生活，才是主线任务。</small><span class="version">LOCAL & OFFLINE · v1.5</span></div>
     </aside>
     <main>
       <header><div><div class="eyebrow">A LITTLE REMINDER TO LIVE</div><h1 id="page-title">让每次提醒，都有点惊喜。</h1><p id="page-description">下班、喝水、休息，让生活里的小事准时发生。</p></div><span class="date" id="today"></span></header>
       <section id="alarm-panel">
-        <div class="section-heading"><h2>闹钟管理</h2><button class="primary" id="new-alarm">＋ 新建闹钟</button></div>
+        <div class="welcome-banner"><div><span class="banner-kicker">SMALL REMINDERS. BIG LITTLE JOYS.</span><h2>把小事交给闹钟，<br>把时间留给自己。</h2><p>一口水、一个懒腰，都是生活的小小仪式。</p><div id="alarm-stats" class="alarm-stats"></div></div><div class="welcome-art" aria-hidden="true"><i class="art-orbit"></i><span class="art-star" data-icon="sparkle"></span><div class="happy-clock"><span class="clock-bell left"></span><span class="clock-bell right"></span><div class="clock-face"><i class="clock-arm one"></i><i class="clock-arm two"></i><span class="clock-smile">⌣</span></div></div><span class="art-bubble" data-icon="water"></span><span class="art-label-new">A LITTLE JOY, RIGHT ON TIME</span></div></div>
+        <div class="section-heading"><h2><span data-icon="alarm"></span> 我的闹钟 <span id="alarm-count"></span></h2><button class="primary" id="new-alarm"><span data-icon="plus"></span> 新建闹钟</button></div>
         <div id="alarm-list" class="alarm-list"></div>
         <div class="custom-card alarm-editor">
           <label>闹钟名称<input id="alarm-name" maxlength="30"></label>
@@ -57,12 +58,12 @@
         <form id="library-form" class="custom-card"><div class="custom-top"><label>分类名称<input id="library-name" maxlength="20" required></label><label>登场文字<input id="library-title" maxlength="6" required></label></div><label>语句 · 每行一句，最多100句<textarea id="library-quotes" rows="6" required></textarea></label><div class="section-heading"><span id="library-count" class="muted"></span><div><button type="button" id="delete-category" class="text-button">删除分类</button><button type="submit" class="primary">保存分类与语句</button></div></div></form>
         <div id="quote-list"></div>
       </section>
-      <footer><span id="save-status">设置自动保存在本机</span><button id="preview" class="preview-button">▷ <span>预演一下，提前快乐</span></button></footer>
+      <footer><span id="save-status">设置自动保存在本机</span><button id="preview" class="preview-button"><span data-icon="play"></span> <span>预演一下，提前快乐</span></button></footer>
       <div class="browser-note" id="browser-note" hidden>当前为浏览器预览。请在 uTools 8.0+ 中导入 plugin.json，以启用后台定时与桌面全屏。</div>
     </main>
   </div>
   <div class="toast" id="toast" role="status"></div>
   <dialog id="preview-dialog"><iframe id="preview-frame" title="下班动画预演" allow="autoplay"></iframe><button id="close-preview" aria-label="关闭预演">×</button></dialog>
-  <script src="core.js"></script><script src="alarms.js"></script><script src="scenes.js"></script><script src="extra-scenes.js"></script><script src="app.js"></script>
+  <script src="core.js"></script><script src="alarms.js"></script><script src="scenes.js"></script><script src="extra-scenes.js"></script><script src="icons.js"></script><script src="app.js"></script>
 </body>
 </html>

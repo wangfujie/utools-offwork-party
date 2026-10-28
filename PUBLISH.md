@@ -13,9 +13,9 @@ GitHub 负责源码版本管理、备份和协作；可选公开或私有。uToo
 5. 填写插件介绍、版本说明、截图等信息，提交审核。
 6. 在「发布历史」查看审核结果，通过后即可在市场找到。界面若有变化，以当前开发者工具提示为准。
 
-用于发布的运行文件：`plugin.json`、`logo.png`、`preload.js`、`overlay-preload.js`、`core.js`、`alarms.js`、`scenes.js`、`extra-scenes.js`、`extra-animations.css`、`index.html`、`styles.css`、`app.js`、`overlay.html`、`overlay.css`、`overlay.js`。
+用于发布的运行文件：`plugin.json`、`logo.png`、`preload.js`、`overlay-preload.js`、`core.js`、`alarms.js`、`scenes.js`、`extra-scenes.js`、`extra-animations.css`、`index.html`、`styles.css`、`ui.css`、`icons.js`、`app.js`、`overlay.html`、`overlay.css`、`overlay.js`。
 
-不要把 `.git`、`release`、测试脚本、预览截图或不相关文件放入提交审核的运行目录。项目的 `release/趣味闹钟-1.4.0.zip` 为源码备份包，不是市场安装包。
+不要把 `.git`、`release`、测试脚本、预览截图或不相关文件放入提交审核的运行目录。项目的 `release/趣味闹钟-1.5.0.zip` 为源码备份包，不是市场安装包。
 
 ## 可直接使用的介绍
 
@@ -44,6 +44,14 @@ GitHub 负责源码版本管理、备份和协作；可选公开或私有。uToo
 本插件不收集、不上传用户的身份、桌面截图或工作内容。提醒设置通过 uTools 本地存储保存；定时任务由 uTools 的原生定时能力管理。插件无网络请求。
 
 提示音由本地合成；语音朗读调用操作系统/浏览器提供的语音引擎，其可用性及底层处理方式由宿主和系统决定。用户可以在设置中关闭提示音与语音。
+
+## 1.5.0 版本说明
+
+- 全新暖白、珊瑚橙与雾紫界面，优化卡片层级、时间展示和分类识别。
+- 闹钟列表采用动画开关；授权等待显示加载状态，取消授权保持原状态。
+- 新增笑脸闹钟欢迎插画、提醒数量统计、分类图标、导航及按钮图标。
+- 补充轻量悬停与展开动效；支持键盘操作和系统减少动态效果设置。
+- 保留现有闹钟、文案库、动画和定时规则。
 
 ## 1.4.0 版本说明
 

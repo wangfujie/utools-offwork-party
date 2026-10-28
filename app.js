@@ -12,6 +12,9 @@ let toastTimer;
 let schedules = [];
 let expandedAlarm = null;
 let libraryCategory = 'offwork';
+let toggleMotion = null;
+let pendingToggle = null;
+const icon = window.FunIcons;
 const details = document.createElement('section');
 details.id = 'alarm-details'; details.hidden = true;
 const editor = document.querySelector('.alarm-editor');
@@ -198,15 +201,24 @@ function refreshCategories() {
   $('category').value = selected;
 }
 refreshCategories();
-function escapeText(text) { const node = document.createElement('span'); node.textContent = text; return node.innerHTML; }
+function escapeText(text) { const node = document.createElement('span'); node.textContent = text; return node.innerHTML.replace(/"/g, '&quot;'); }
 function renderAlarms() {
   const focused = details.contains(document.activeElement) ? document.activeElement : null;
   details.remove();
-  $('alarm-list').innerHTML = manager.all().map(alarm => {
+  const alarms = manager.all();
+  $('alarm-count').textContent = String(alarms.length).padStart(2, '0');
+  $('alarm-stats').innerHTML = `<span>${icon('bell')}<b>${alarms.filter(a => a.enabled).length}</b> 正在守时</span><span>${icon('pause')}<b>${alarms.filter(a => !a.enabled).length}</b> 暂时休息</span>`;
+  $('alarm-list').innerHTML = alarms.map(alarm => {
     const data = alarm.enabled ? alarm.active : alarm.draft;
     const category = manager.categories()[data.category || 'offwork'];
-    return `<article class="alarm-row ${alarm.id === expandedAlarm ? 'chosen' : ''}" data-row="${alarm.id}"><button data-edit="${alarm.id}" aria-expanded="${alarm.id === expandedAlarm}" aria-controls="alarm-details"><span class="alarm-category">${escapeText(category ? category.name : '提醒')}</span><strong>${escapeText(alarm.name)}</strong><small>${data.mode === 'interval' ? `每 ${data.interval} 分钟 · ${data.start}–${data.end}` : data.time} · ${alarm.enabled ? '已开启' : '未开启'} · ${alarm.id === expandedAlarm ? '收起详情 ▴' : '展开详情 ▾'}</small></button><button data-toggle="${alarm.id}">${alarm.enabled ? '暂停' : '开启'}</button><button data-remove="${alarm.id}">删除</button></article>`;
+    const animated = toggleMotion && toggleMotion.id === alarm.id && Date.now() < toggleMotion.until;
+    const dayLabel = { weekdays: '周一至周五', daily: '每天', once: '仅下一次', custom: '周' + (data.days || []).map(d => '日一二三四五六'[d]).join('、') }[data.repeat] || '每天';
+    return `<article class="alarm-row ${alarm.id === expandedAlarm ? 'chosen' : ''} ${alarm.enabled ? 'is-enabled' : ''}" data-row="${alarm.id}" data-category="${data.category || 'custom'}"><button class="alarm-main" data-edit="${alarm.id}" aria-expanded="${alarm.id === expandedAlarm}" aria-controls="alarm-details"><span class="category-art">${icon(data.category || 'offwork')}</span><span class="alarm-info"><span class="alarm-name-line"><strong>${escapeText(alarm.name)}</strong><span class="alarm-category">${escapeText(category ? category.name : '提醒')}</span></span><span class="alarm-time-display">${data.mode === 'interval' ? `<b>${data.interval}</b><em>分钟 / 次</em>` : `<b>${data.time}</b>`}</span><small>${icon(data.mode === 'interval' ? 'repeat' : 'meeting')}${data.mode === 'interval' ? `${data.start}–${data.end} · ` : ''}${dayLabel}</small></span></button><div class="alarm-actions"><span class="state-label">${alarm.enabled ? '提醒中' : '已关闭'}</span><button class="alarm-switch ${alarm.enabled ? 'is-on' : ''} ${animated ? 'is-changing' : ''}" role="switch" aria-checked="${alarm.enabled}" aria-label="${alarm.enabled ? '关闭' : '开启'}${escapeText(alarm.name)}" data-toggle="${alarm.id}"><span class="switch-knob">${icon(alarm.enabled ? 'check' : 'pause')}</span><span class="switch-spinner"></span></button><button class="icon-button delete-alarm" aria-label="删除${escapeText(alarm.name)}" title="删除闹钟" data-remove="${alarm.id}">${icon('trash')}</button><button class="icon-button expand-alarm" aria-label="${alarm.id === expandedAlarm ? '收起' : '展开'}${escapeText(alarm.name)}详情" data-edit="${alarm.id}" aria-expanded="${alarm.id === expandedAlarm}" aria-controls="alarm-details">${icon('chevron')}</button></div></article>`;
   }).join('');
+  $('alarm-list').querySelectorAll('[data-toggle]').forEach(button => {
+    button.disabled = !!pendingToggle;
+    if (pendingToggle === button.dataset.toggle) button.setAttribute('aria-busy', 'true');
+  });
   const row = expandedAlarm && $('alarm-list').querySelector(`[data-row="${expandedAlarm}"]`);
   details.hidden = !row;
   if (row) row.after(details); else $('alarm-panel').append(details);
@@ -237,25 +249,28 @@ $('category').addEventListener('change', () => {
 });
 $('alarm-list').addEventListener('click', async event => {
   const button = event.target.closest('button'); if (!button) return;
+  if (pendingToggle) return;
   if (button.dataset.edit) return expandAlarm(button.dataset.edit);
   button.disabled = true;
+  if (button.dataset.toggle) pendingToggle = button.dataset.toggle;
   try {
     if (button.dataset.remove) { manager.remove(button.dataset.remove); if (expandedAlarm === button.dataset.remove) expandedAlarm = null; selectAlarm(manager.selected()); }
     if (button.dataset.toggle) {
       const id = button.dataset.toggle;
       const alarm = manager.all().find(a => a.id === id);
-      if (alarm.enabled) manager.pause(id);
-      else { manager.select(id); const result = await manager.activate(alarm.draft); toast(result.accepted ? result.warning || '提醒已开启' : '未获授权，原提醒保留'); }
+      button.setAttribute('aria-busy', 'true');
+      if (alarm.enabled) { manager.pause(id); toggleMotion = { id, until: Date.now() + 400 }; }
+      else { manager.select(id); const result = await manager.activate(alarm.draft); if (result.accepted) toggleMotion = { id, until: Date.now() + 400 }; toast(result.accepted ? result.warning || '提醒已开启' : '未获授权，原提醒保留'); }
       selectAlarm(manager.selected());
     }
   } catch (error) { toast(error.message); renderAlarms(); }
-  finally { button.disabled = false; }
+  finally { pendingToggle = null; button.disabled = false; button.removeAttribute('aria-busy'); renderAlarms(); }
 });
 // 文案库有独立的浏览分类和编辑表单，不写入当前闹钟草稿。
 function loadLibrary(id) {
   libraryCategory = id;
   const categories = manager.categories();
-  $('library-tabs').innerHTML = Object.entries(categories).map(([key, c]) => `<button data-library="${key}" aria-pressed="${key === id}" class="${key === id ? 'active' : ''}">${escapeText(c.name)} <small>${c.quotes.length}</small></button>`).join('');
+  $('library-tabs').innerHTML = Object.entries(categories).map(([key, c]) => `<button data-library="${key}" aria-pressed="${key === id}" class="${key === id ? 'active' : ''}">${icon(key)}${escapeText(c.name)} <small>${c.quotes.length}</small></button>`).join('');
   const category = categories[id];
   $('library-name').value = category ? category.name : '';
   $('library-title').value = category ? category.title : '提醒';
