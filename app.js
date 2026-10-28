@@ -2,8 +2,9 @@
 const $ = id => document.getElementById(id);
 const core = window.Offwork;
 const native = window.offworkNative;
+const manager = native || window.AlarmStore.create({ getItem: key => JSON.parse(localStorage.getItem(key) || (key === 'offwork-settings-v1' ? localStorage.getItem('offwork-settings') : null) || 'null'), setItem: (key, value) => localStorage.setItem(key, JSON.stringify(value)) });
 let storedSettings;
-try { storedSettings = native ? native.read() : JSON.parse(localStorage.getItem('offwork-settings') || 'null'); }
+try { storedSettings = manager.read(); }
 catch (error) { console.warn('读取设置失败，使用默认配置', error); }
 let settings = core.normalize(storedSettings);
 let selectedDays = settings.days.slice();
@@ -20,6 +21,7 @@ function toast(message) {
 
 function collect() {
   return core.normalize({ ...settings, time: $('alarm-time').value, repeat: $('repeat').value, days: selectedDays,
+    category: $('category').value, mode: $('mode').value, interval: Number($('interval').value), start: $('start').value, end: $('end').value,
     title: $('custom-title').value, quote: $('quote').value, accent: $('accent').value,
     duration: $('duration').value, dim: $('dim').value, randomQuote: $('random-quote').checked,
     sound: $('sound').checked, voice: $('voice').checked });
@@ -28,19 +30,22 @@ function collect() {
 function save() {
   settings = collect();
   try {
-    if (native) native.save(settings);
-    else localStorage.setItem('offwork-settings', JSON.stringify(settings));
-    $('save-status').textContent = '✓ 外观已保存 · 时间与日期修改后需重新开启提醒';
+    manager.save(settings);
+    $('save-status').textContent = '✓ 草稿已保存 · 修改后需重新开启当前闹钟';
   } catch (error) { toast('保存失败：' + error.message); }
   $('dim-value').textContent = settings.dim + '%';
   $('quote').disabled = settings.randomQuote;
   // 自定义文案优先于随机文案，启用随机时明确清空输入框。
   $('days').hidden = settings.repeat !== 'custom';
+  $('interval-fields').hidden = settings.mode !== 'interval';
+  $('alarm-time').disabled = settings.mode === 'interval';
+  document.querySelector('.time-field').hidden = settings.mode === 'interval';
+  renderAlarms(); renderQuotes();
 }
 
 function renderThemes() {
   $('theme-grid').innerHTML = core.themes.map(theme => `<button class="theme-card ${settings.theme === theme.id ? 'selected' : ''}" data-theme="${theme.id}" aria-pressed="${settings.theme === theme.id}" style="--card-bg:${backgrounds[theme.id]}"><div class="theme-art"><span class="theme-tag">${theme.tag}</span>${window.OffworkScenes.svg(theme.id)}<span class="selected-mark">✓</span></div><div class="theme-info"><strong>${theme.name}</strong><p>${theme.desc}</p></div></button>`).join('');
-  $('quote').placeholder = core.themes.find(t => t.id === settings.theme).line;
+  $('quote').placeholder = (core.quoteCategories[settings.category] || core.quoteCategories.offwork).quotes[0];
 }
 
 function renderDays() {
@@ -48,6 +53,14 @@ function renderDays() {
 }
 
 function load() {
+  $('alarm-name').value = manager.all().find(a => a.id === manager.selected()).name;
+  $('category').value = settings.category || 'offwork';
+  $('mode').value = settings.mode || 'fixed';
+  $('interval').value = settings.interval || 60;
+  $('start').value = settings.start || '09:00'; $('end').value = settings.end || '18:00';
+  $('interval-fields').hidden = settings.mode !== 'interval';
+  $('alarm-time').disabled = settings.mode === 'interval';
+  document.querySelector('.time-field').hidden = settings.mode === 'interval';
   $('alarm-time').value = settings.time;
   $('repeat').value = settings.repeat;
   $('custom-title').value = settings.title;
@@ -63,16 +76,20 @@ function load() {
   $('days').hidden = settings.repeat !== 'custom';
   renderThemes();
   renderDays();
+  renderAlarms(); renderQuotes();
 }
 
 function refreshSchedules() {
   try { schedules = native ? native.list() : []; } catch (error) { toast('读取提醒失败：' + error.message); }
   tick();
+  renderAlarms();
 }
 
 // 倒计时以已获授权的实际任务为准，修改草稿不会改变已生效时间。
 function nextScheduled(item, now) {
   if (typeof item.trigger === 'number') return item.trigger > now ? new Date(item.trigger) : null;
+  const alarm = manager.all().find(a => a.codes.includes(item.code));
+  if (alarm && alarm.active && alarm.active.mode === 'interval') return core.nextTime(alarm.active, now);
   const parts = item.trigger.cron.split(' ');
   const days = parts[4] === '*' ? [0, 1, 2, 3, 4, 5, 6] : parts[4].split(',').map(Number);
   return core.nextTime({ time: `${String(parts[1]).padStart(2, '0')}:${String(parts[0]).padStart(2, '0')}`, repeat: 'custom', days }, now);
@@ -121,7 +138,7 @@ $('days').addEventListener('click', event => {
   selectedDays = selectedDays.includes(day) ? selectedDays.filter(value => value !== day) : selectedDays.concat(day);
   save(); renderDays();
 });
-['alarm-time', 'repeat', 'custom-title', 'quote', 'accent', 'duration', 'dim', 'sound', 'voice'].forEach(id => $(id).addEventListener('input', save));
+['alarm-time', 'repeat', 'custom-title', 'quote', 'accent', 'duration', 'dim', 'sound', 'voice', 'mode', 'interval', 'start', 'end'].forEach(id => $(id).addEventListener('input', save));
 $('random-quote').addEventListener('change', () => { if ($('random-quote').checked) $('quote').value = ''; save(); });
 $('activate').addEventListener('click', async () => {
   if (!$('alarm-time').value) return toast('请先设置有效的提醒时间');
@@ -155,16 +172,56 @@ $('preview-dialog').addEventListener('cancel', () => { $('preview-frame').src = 
 window.addEventListener('message', event => {
   if (event.source === $('preview-frame').contentWindow && event.data === 'offwork-close') closePreview();
 });
-$('quote-list').innerHTML = core.quotes.map((quote, index) => `<button class="quote-pick" data-quote="${index}"><span>${String(index + 1).padStart(2, '0')}</span>${quote}</button>`).join('');
+function renderQuotes() {
+  const pool = (core.quoteCategories[settings.category] || core.quoteCategories.offwork).quotes;
+  $('quote-list').innerHTML = pool.map((quote, index) => `<button class="quote-pick" data-quote="${index}"><span>${String(index + 1).padStart(2, '0')}</span>${quote}</button>`).join('');
+}
 $('quote-list').addEventListener('click', event => {
   const button = event.target.closest('[data-quote]');
   if (!button) return;
-  $('quote').value = core.quotes[Number(button.dataset.quote)];
+  $('quote').value = (core.quoteCategories[settings.category] || core.quoteCategories.offwork).quotes[Number(button.dataset.quote)];
   $('random-quote').checked = false;
   save(); toast('这句话已经加入你的定时提醒。');
 });
 $('today').textContent = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
 $('browser-note').hidden = !!native;
+$('category').innerHTML = Object.entries(core.quoteCategories).map(([id, category]) => `<option value="${id}">${category.name}</option>`).join('');
+function escapeText(text) { const node = document.createElement('span'); node.textContent = text; return node.innerHTML; }
+function renderAlarms() {
+  $('alarm-list').innerHTML = manager.all().map(alarm => `<article class="alarm-row ${alarm.id === manager.selected() ? 'chosen' : ''}"><button data-edit="${alarm.id}"><strong>${escapeText(alarm.name)}</strong><small>${alarm.draft.mode === 'interval' ? `每 ${alarm.draft.interval} 分钟 · ${alarm.draft.start}–${alarm.draft.end}` : alarm.draft.time} · ${alarm.enabled ? '已开启' : '未开启'}</small></button><button data-toggle="${alarm.id}">${alarm.enabled ? '暂停' : '开启'}</button><button data-remove="${alarm.id}">删除</button></article>`).join('');
+}
+function selectAlarm(id) { manager.select(id); settings = core.normalize(manager.read()); selectedDays = settings.days.slice(); load(); refreshSchedules(); }
+$('new-alarm').addEventListener('click', () => {
+  const id = manager.add('新的提醒', { ...core.defaults, category: 'custom', title: '提醒' }); selectAlarm(id);
+  $('alarm-name').focus();
+});
+$('alarm-name').addEventListener('input', () => { manager.rename($('alarm-name').value); renderAlarms(); });
+$('category').addEventListener('change', () => {
+  const category = $('category').value;
+  $('custom-title').value = core.quoteCategories[category].title;
+  $('quote').value = ''; $('random-quote').checked = true;
+  if (['water', 'movement', 'eyes'].includes(category)) { $('mode').value = 'interval'; $('interval').value = category === 'eyes' ? 20 : 60; }
+  else $('mode').value = 'fixed';
+  if (category === 'lunch') $('alarm-time').value = '12:00';
+  if (category === 'offwork') $('alarm-time').value = '18:00';
+  save();
+});
+$('alarm-list').addEventListener('click', async event => {
+  const button = event.target.closest('button'); if (!button) return;
+  if (button.dataset.edit) return selectAlarm(button.dataset.edit);
+  button.disabled = true;
+  try {
+    if (button.dataset.remove) { manager.remove(button.dataset.remove); selectAlarm(manager.selected()); }
+    if (button.dataset.toggle) {
+      const id = button.dataset.toggle;
+      const alarm = manager.all().find(a => a.id === id);
+      if (alarm.enabled) manager.pause(id);
+      else { manager.select(id); const result = await manager.activate(alarm.draft); toast(result.accepted ? result.warning || '提醒已开启' : '未获授权，原提醒保留'); }
+      selectAlarm(manager.selected());
+    }
+  } catch (error) { toast(error.message); renderAlarms(); }
+  finally { button.disabled = false; }
+});
 load(); refreshSchedules();
 setInterval(tick, 1000);
 window.addEventListener('offwork-enter', refreshSchedules);

@@ -10,15 +10,23 @@
       <a class="brand" href="#"><img class="brand-logo" src="logo.png" width="42" height="42" alt="趣味闹钟图标"><span>趣味闹钟<small>FUN ALARM</small></span></a>
       <div class="sidebar-label">把时间还给生活</div>
       <nav aria-label="主导航">
-        <button class="nav-item active" data-tab="alarm"><span>◷</span> 趣味闹钟</button>
+        <button class="nav-item active" data-tab="alarm"><span>◷</span> 闹钟管理</button>
         <button class="nav-item" data-tab="themes"><span>✧</span> 动画放映室</button>
         <button class="nav-item" data-tab="words"><span>☷</span> 人间清醒</button>
       </nav>
-      <div class="sidebar-bottom"><span class="little-flower">✳</span><p>准时提醒，<br>快乐发生。</p><small>你的生活，才是主线任务。</small><span class="version">LOCAL & OFFLINE · v1.2</span></div>
+      <div class="sidebar-bottom"><span class="little-flower">✳</span><p>准时提醒，<br>快乐发生。</p><small>你的生活，才是主线任务。</small><span class="version">LOCAL & OFFLINE · v1.3</span></div>
     </aside>
     <main>
       <header><div><div class="eyebrow">A LITTLE REMINDER TO LIVE</div><h1 id="page-title">让每次提醒，都有点惊喜。</h1><p id="page-description">下班、喝水、休息，让生活里的小事准时发生。</p></div><span class="date" id="today"></span></header>
       <section id="alarm-panel">
+        <div class="section-heading"><h2>闹钟管理</h2><button class="primary" id="new-alarm">＋ 新建闹钟</button></div>
+        <div id="alarm-list" class="alarm-list"></div>
+        <div class="custom-card alarm-editor">
+          <label>闹钟名称<input id="alarm-name" maxlength="30"></label>
+          <label>提醒分类<select id="category"></select></label>
+          <label>提醒方式<select id="mode"><option value="fixed">固定时间</option><option value="interval">间隔提醒</option></select></label>
+          <div id="interval-fields" hidden><label>每隔（分钟）<input id="interval" type="number" min="5" max="240" value="60"></label><label>开始时间<input id="start" type="time" value="09:00"></label><label>结束时间<input id="end" type="time" value="18:00"></label><small>每天从开始时刻起算，结束时刻不再提醒；仅在选定星期生效。</small></div>
+        </div>
         <div class="hero-card">
           <div class="hero-copy"><span class="pill"><i></i><span id="alarm-status">尚未开启提醒</span></span><div class="count-label">距离下一次提醒</div><div class="countdown" id="countdown">--<span>时</span>--<span>分</span>--<span>秒</span></div><p id="next-label">给下一件重要的小事定个时间</p></div>
           <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="spark a">✧</span><span class="spark b">✳</span><div class="clock"><div class="clock-dot"></div><div class="hand hour"></div><div class="hand minute"></div><span class="clock-tick t1"></span><span class="clock-tick t2"></span><span class="clock-tick t3"></span><span class="clock-tick t4"></span></div><div class="art-label">LIFE IS CALLING ↗</div></div>
@@ -42,13 +50,13 @@
           <div class="options"><label class="check"><input type="checkbox" id="random-quote" checked> 随机一句人间清醒</label><label class="check"><input type="checkbox" id="sound" checked> 提示音</label><label class="check"><input type="checkbox" id="voice" checked> 语音读出来</label><label class="dim-label">遮罩 <input type="range" min="10" max="90" step="5" id="dim" value="70"><span id="dim-value">70%</span></label></div>
         </div>
       </section>
-      <section id="words-panel" hidden><div class="quote-intro">不贩卖焦虑，只提醒你：你值得好好休息。<br><small>点击一句话，作为下班提醒文案。</small></div><div id="quote-list"></div></section>
+      <section id="words-panel" hidden><div class="quote-intro">给每一种提醒，配一句合适的话。<br><small>文案按当前闹钟分类展示，点击即可使用。</small></div><div id="quote-list"></div></section>
       <footer><span id="save-status">设置自动保存在本机</span><button id="preview" class="preview-button">▷ <span>预演一下，提前快乐</span></button></footer>
       <div class="browser-note" id="browser-note" hidden>当前为浏览器预览。请在 uTools 8.0+ 中导入 plugin.json，以启用后台定时与桌面全屏。</div>
     </main>
   </div>
   <div class="toast" id="toast" role="status"></div>
   <dialog id="preview-dialog"><iframe id="preview-frame" title="下班动画预演" allow="autoplay"></iframe><button id="close-preview" aria-label="关闭预演">×</button></dialog>
-  <script src="core.js"></script><script src="scenes.js"></script><script src="app.js"></script>
+  <script src="core.js"></script><script src="alarms.js"></script><script src="scenes.js"></script><script src="app.js"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@ document.documentElement.style.setProperty('--accent', settings.accent);
 document.documentElement.style.setProperty('--dim', settings.dim / 100);
 document.documentElement.style.setProperty('--duration', settings.duration + 's');
 document.getElementById('scene').innerHTML = window.OffworkScenes.svg(settings.theme);
-document.getElementById('caption').textContent = theme.tag + ' / FUN ALARM';
+document.getElementById('caption').textContent = ((core.quoteCategories[settings.category] || {}).name || theme.tag) + ' / FUN ALARM';
 document.getElementById('message').textContent = typeof raw.message === 'string' ? raw.message.slice(0, 100) : core.message(settings);
 Array.from(settings.title).forEach((character, index) => {
   const span = document.createElement('span');

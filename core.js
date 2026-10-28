@@ -18,6 +18,17 @@
     '世界不会因为你准点下班就停止转动。', '合上电脑，打开生活。',
     '允许自己慢一点，花也不是一天开的。', '下班不是逃跑，是奔向自己的生活。'
   ];
+  // 每个提醒类型使用独立文案，避免喝水时出现下班提示。
+  const quoteCategories = {
+    offwork: { name: '下班', title: '下班', quotes },
+    water: { name: '喝水', title: '喝水', quotes: ['喝口水，让忙碌的自己缓一缓。', '水杯在等你，补充一点活力吧。', '给身体加点水，接着从容出发。'] },
+    movement: { name: '起身活动', title: '活动', quotes: ['站起来走一走，伸展一下肩颈。', '离开椅子几分钟，让身体换个姿势。', '动一动，给久坐的自己放个小假。'] },
+    eyes: { name: '休息眼睛', title: '护眼', quotes: ['看看远方，让眼睛休息片刻。', '离开屏幕一会儿，给眼睛放个假。', '眨眨眼，望一望远处的风景。'] },
+    lunch: { name: '吃饭', title: '吃饭', quotes: ['先好好吃饭，再继续忙碌。', '该补充能量了，记得按时吃饭。', '工作可以等一等，饭要趁热吃。'] },
+    nap: { name: '午休结束', title: '醒醒', quotes: ['午休结束，慢慢找回精神。', '伸个懒腰，开始新的半天。', '带上好心情，继续今天的小目标。'] },
+    meeting: { name: '会议待办', title: '别忘啦', quotes: ['约定的时间到了，带好需要的资料。', '把手上的事存好，准备下一项安排。', '小提醒：别忘了你安排的那件事。'] },
+    custom: { name: '自定义', title: '提醒', quotes: ['时间到了，记得照顾好自己。', '给生活里的小事留一点时间。', '这是送给自己的一个温柔提醒。'] }
+  };
   const defaults = { time: '18:00', repeat: 'weekdays', days: [1, 2, 3, 4, 5], theme: 'confetti', title: '下班', quote: '', randomQuote: true, accent: '#deedb0', duration: 15, dim: 70, sound: true, voice: true };
 
   // 规范化持久化数据，避免无效设置影响定时和动画。
@@ -44,6 +55,15 @@
   function nextTime(input, now) {
     const settings = normalize(input);
     const start = now ? new Date(now) : new Date();
+    if (settings.mode === 'interval') {
+      for (let offset = 1; offset <= 8 * 1440; offset++) {
+        const date = new Date(start);
+        date.setSeconds(0, 0);
+        date.setMinutes(date.getMinutes() + offset);
+        if (intervalDue(settings, date)) return date;
+      }
+      return null;
+    }
     const parts = settings.time.split(':').map(Number);
     for (let offset = 0; offset <= 7; offset++) {
       const date = new Date(start);
@@ -57,6 +77,12 @@
   function schedule(input, code, now) {
     const settings = normalize(input);
     if (settings.repeat === 'custom' && !settings.days.length) throw new Error('请至少选择一个提醒日期');
+    if (settings.mode === 'interval') {
+      if (!Number.isInteger(settings.interval) || settings.interval < 5 || settings.interval > 240) throw new Error('间隔须为 5–240 分钟的整数');
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(settings.start) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(settings.end) || settings.start >= settings.end) throw new Error('请设置有效的同日提醒时段');
+      if (settings.repeat === 'once') throw new Error('间隔提醒请选择重复星期');
+      return { code, label: `趣味闹钟 · ${settings.title} · 每${settings.interval}分钟`, trigger: { cron: `* * * * ${getDays(settings).join(',')}` } };
+    }
     const [hour, minute] = settings.time.split(':').map(Number);
     const trigger = settings.repeat === 'once' ? nextTime(settings, now).getTime() : { cron: `${minute} ${hour} * * ${getDays(settings).join(',')}` };
     return { code, label: `趣味闹钟 · ${settings.time}`, trigger };
@@ -64,9 +90,21 @@
 
   function message(settings, random) {
     if (settings.quote) return settings.quote;
-    if (settings.randomQuote) return quotes[Math.floor((random === undefined ? Math.random() : random) * quotes.length) % quotes.length];
+    if (settings.randomQuote) {
+      const pool = (quoteCategories[settings.category] || quoteCategories.offwork).quotes;
+      return pool[Math.floor((random === undefined ? Math.random() : random) * pool.length) % pool.length];
+    }
+    if (settings.category && settings.category !== 'offwork' && quoteCategories[settings.category]) return quoteCategories[settings.category].quotes[0];
     return themes.find(t => t.id === settings.theme).line;
   }
 
-  return { themes, quotes, defaults, normalize, getDays, nextTime, schedule, message };
+  // 每日从开始时刻起按精确分钟间隔触发，结束时刻不再提醒。
+  function intervalDue(settings, date) {
+    const minute = value => Number(value.split(':')[0]) * 60 + Number(value.split(':')[1]);
+    if (!settings.start || !settings.end || !getDays(settings).includes(date.getDay())) return false;
+    const elapsed = date.getHours() * 60 + date.getMinutes() - minute(settings.start);
+    return elapsed >= 0 && date.getHours() * 60 + date.getMinutes() < minute(settings.end) && elapsed % settings.interval === 0;
+  }
+
+  return { themes, quotes, quoteCategories, defaults, normalize, getDays, nextTime, schedule, message, intervalDue };
 });

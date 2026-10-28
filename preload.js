@@ -1,6 +1,8 @@
 'use strict';
 const core = require('./core.js');
-const KEY = 'offwork-settings-v1';
+const alarmStore = require('./alarms.js').create(utools.dbStorage, utools);
+let activeReminder;
+const pendingReminders = [];
 const PREFIX = 'offwork-alarm-';
 const SNOOZE = 'offwork-snooze-';
 let overlays = [];
@@ -9,7 +11,7 @@ let animationGroup = 0;
 let dismissing = false;
 
 function read() {
-  return core.normalize(utools.dbStorage.getItem(KEY));
+  return alarmStore.read();
 }
 
 function list() {
@@ -23,13 +25,19 @@ function closeOverlays() {
   overlays = [];
 }
 
+// 同时到点的提醒按顺序播放，避免后一条覆盖前一条。
+function finishAnimation() {
+  closeOverlays();
+  if (pendingReminders.length) showAnimation(pendingReminders.shift(), false);
+}
+
 // 任意屏幕关闭后，通知所有屏幕停止声音、退出动画并统一释放窗口。
 function dismissOverlays(group) {
   if (group !== animationGroup || dismissing) return false;
   dismissing = true;
   overlays.forEach(win => { if (!win.isDestroyed()) win.webContents.send('offwork-dismiss'); });
   clearTimeout(closeTimer);
-  closeTimer = setTimeout(closeOverlays, 450);
+  closeTimer = setTimeout(finishAnimation, 450);
   return true;
 }
 
@@ -37,7 +45,7 @@ function dismissOverlays(group) {
 function showAnimation(input, preview) {
   const settings = core.normalize(input || read());
   settings.message = core.message(settings);
-  settings.preview = !!preview;
+  settings.preview = !!preview; activeReminder = settings;
   closeOverlays();
   const group = ++animationGroup;
   dismissing = false;
@@ -67,30 +75,11 @@ function showAnimation(input, preview) {
     throw error;
   }
   // 即使渲染页异常，也确保全屏窗口自动释放。
-  closeTimer = setTimeout(closeOverlays, settings.duration * 1000 + 3000);
-}
-
-// 请求新任务并核实用户授权后，再替换旧任务，取消时保留原提醒。
-async function activate(input) {
-  if (typeof utools.requestSchedule !== 'function') throw new Error('定时提醒需要 uTools 8.0 或更新版本');
-  const settings = core.normalize(input);
-  const code = PREFIX + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-  await utools.requestSchedule(core.schedule(settings, code));
-  if (!list().some(item => item.code === code)) return { accepted: false };
-  utools.dbStorage.setItem(KEY, settings);
-  const failed = [];
-  list().filter(item => item.code !== code).forEach(item => {
-    try { utools.removeSchedule(item.code); } catch (error) { failed.push(item.code); }
-  });
-  return { accepted: true, warning: failed.length ? '新提醒已启用，但旧任务未完全移除，请在 uTools 定时任务中检查。' : '' };
+  closeTimer = setTimeout(finishAnimation, settings.duration * 1000 + 3000);
 }
 
 window.offworkNative = {
-  read,
-  save: input => { const settings = core.normalize(input); utools.dbStorage.setItem(KEY, settings); return settings; },
-  list: () => typeof utools.getSchedules === 'function' ? list() : [],
-  activate,
-  pause: () => { list().forEach(item => utools.removeSchedule(item.code)); },
+  ...alarmStore,
   preview: input => showAnimation(input, true)
 };
 
@@ -104,7 +93,12 @@ utools.onPluginEnter(({ code }) => {
 
 if (typeof utools.onScheduleTrigger === 'function') {
   utools.onScheduleTrigger(({ code }) => {
-    if (code.startsWith(PREFIX) || code.startsWith(SNOOZE)) showAnimation(read(), false);
+    const reminder = alarmStore.resolve(code);
+    if (!reminder || !reminder.settings) return;
+    if (reminder.settings.mode === 'interval' && !code.startsWith(SNOOZE) && !core.intervalDue(reminder.settings, new Date())) return;
+    const settings = { ...reminder.settings, alarmId: reminder.id };
+    if (overlays.length) pendingReminders.push(settings);
+    else showAnimation(settings, false);
   });
 }
 
@@ -115,7 +109,9 @@ ipcRenderer.on('offwork-snooze', async (event, group) => {
   if (!dismissOverlays(group)) return;
   try {
     const code = SNOOZE + Date.now();
+    const reminder = { id: activeReminder.alarmId || alarmStore.selected(), settings: activeReminder };
     await utools.requestSchedule({ code, label: '趣味闹钟 · 十分钟后提醒', trigger: Date.now() + 10 * 60000 });
+    if (list().some(item => item.code === code)) alarmStore.rememberSnooze(code, reminder);
     utools.showNotification(list().some(item => item.code === code) ? '好，十分钟后再提醒你。' : '未创建稍后提醒。');
   } catch (error) {
     utools.showNotification('稍后提醒创建失败：' + error.message);
