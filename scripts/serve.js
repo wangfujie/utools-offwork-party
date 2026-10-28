@@ -16,4 +16,4 @@ const server = http.createServer((req, res) => {
     res.end(data);
   });
 });
-server.listen(4173, '127.0.0.1', () => console.log('下班万岁预览：http://127.0.0.1:4173'));
+server.listen(4173, '127.0.0.1', () => console.log('趣味闹钟预览：http://127.0.0.1:4173'));

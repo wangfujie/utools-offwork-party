@@ -4,7 +4,7 @@
   "preload": "preload.js",
   "pluginSetting": { "single": true, "height": 640 },
   "features": [
-    { "code": "offwork-settings", "description": "下班万岁：设置下班闹钟与动画主题", "cmds": ["下班万岁", "下班闹钟", "下班提醒"] },
-    { "code": "offwork-preview", "description": "立即播放当前下班动画", "cmds": ["我要下班", "下班动画"], "mainHide": true }
+    { "code": "offwork-settings", "description": "趣味闹钟：设置定时提醒与动画主题", "cmds": ["趣味闹钟", "定时提醒", "下班闹钟", "下班提醒"] },
+    { "code": "offwork-preview", "description": "立即预演当前提醒动画", "cmds": ["闹钟预演", "我要下班", "下班动画"], "mainHide": true }
   ]
 }

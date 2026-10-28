@@ -59,7 +59,7 @@
     if (settings.repeat === 'custom' && !settings.days.length) throw new Error('请至少选择一个提醒日期');
     const [hour, minute] = settings.time.split(':').map(Number);
     const trigger = settings.repeat === 'once' ? nextTime(settings, now).getTime() : { cron: `${minute} ${hour} * * ${getDays(settings).join(',')}` };
-    return { code, label: `下班万岁 · ${settings.time}`, trigger };
+    return { code, label: `趣味闹钟 · ${settings.time}`, trigger };
   }
 
   function message(settings, random) {

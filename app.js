@@ -81,12 +81,12 @@ function nextScheduled(item, now) {
 function tick() {
   const now = new Date();
   const next = schedules.map(item => nextScheduled(item, now)).filter(Boolean).sort((a, b) => a - b)[0];
-  $('alarm-status').textContent = next ? '下班提醒已开启' : native ? '尚未开启提醒' : '浏览器体验模式';
+  $('alarm-status').textContent = next ? '定时提醒已开启' : native ? '尚未开启提醒' : '浏览器体验模式';
   document.querySelector('.pill').classList.toggle('enabled', !!next);
   $('pause').disabled = !schedules.length;
   if (!next) {
     $('countdown').innerHTML = '--<span>时</span>--<span>分</span>--<span>秒</span>';
-    $('next-label').textContent = '先给自己定一个下班时间吧';
+    $('next-label').textContent = '给下一件重要的小事定个时间';
     return;
   }
   const total = Math.max(0, Math.ceil((next - now) / 1000));
@@ -101,8 +101,8 @@ function setTab(tab) {
   $('theme-section').hidden = tab === 'words';
   $('custom-section').hidden = tab === 'words';
   $('words-panel').hidden = tab !== 'words';
-  $('page-title').textContent = { alarm: '今天，也要准点快乐。', themes: '下班，也要闪亮登场。', words: '别太累，你已经很棒了。' }[tab];
-  $('page-description').textContent = { alarm: '给忙碌的一天，安排一个漂亮的句号。', themes: '选一位下班搭子，接你回到生活里。', words: '一些温柔的话，送给努力生活的你。' }[tab];
+  $('page-title').textContent = { alarm: '让每次提醒，都有点惊喜。', themes: '提醒，也要闪亮登场。', words: '别太累，你已经很棒了。' }[tab];
+  $('page-description').textContent = { alarm: '下班、喝水、休息，让生活里的小事准时发生。', themes: '选一个趣味搭子，把提醒变成小小的惊喜。', words: '一些温柔的话，送给努力生活的你。' }[tab];
 }
 
 document.querySelectorAll('.nav-item').forEach(button => button.addEventListener('click', () => setTab(button.dataset.tab)));
@@ -124,14 +124,14 @@ $('days').addEventListener('click', event => {
 ['alarm-time', 'repeat', 'custom-title', 'quote', 'accent', 'duration', 'dim', 'sound', 'voice'].forEach(id => $(id).addEventListener('input', save));
 $('random-quote').addEventListener('change', () => { if ($('random-quote').checked) $('quote').value = ''; save(); });
 $('activate').addEventListener('click', async () => {
-  if (!$('alarm-time').value) return toast('请先设置有效的下班时间');
+  if (!$('alarm-time').value) return toast('请先设置有效的提醒时间');
   settings = collect();
   if (settings.repeat === 'custom' && !settings.days.length) return toast('请至少选择一个提醒日期');
   if (!native) return toast('请在 uTools 中导入插件后开启后台提醒；这里可以体验所有动画。');
   $('activate').disabled = true;
   try {
     const result = await native.activate(settings);
-    toast(result.accepted ? result.warning || '提醒已开启，到点接你下班！' : '未获授权，保留原来的提醒。');
+    toast(result.accepted ? result.warning || '提醒已开启，到点准时见！' : '未获授权，保留原来的提醒。');
     refreshSchedules();
   } catch (error) { toast('开启失败：' + error.message); }
   finally { $('activate').disabled = false; }
@@ -161,7 +161,7 @@ $('quote-list').addEventListener('click', event => {
   if (!button) return;
   $('quote').value = core.quotes[Number(button.dataset.quote)];
   $('random-quote').checked = false;
-  save(); toast('这句话已经加入你的下班提醒。');
+  save(); toast('这句话已经加入你的定时提醒。');
 });
 $('today').textContent = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
 $('browser-note').hidden = !!native;

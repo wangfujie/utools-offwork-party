@@ -115,8 +115,8 @@ ipcRenderer.on('offwork-snooze', async (event, group) => {
   if (!dismissOverlays(group)) return;
   try {
     const code = SNOOZE + Date.now();
-    await utools.requestSchedule({ code, label: '下班万岁 · 十分钟后提醒', trigger: Date.now() + 10 * 60000 });
-    utools.showNotification(list().some(item => item.code === code) ? '好，十分钟后再接你下班。' : '未创建稍后提醒。');
+    await utools.requestSchedule({ code, label: '趣味闹钟 · 十分钟后提醒', trigger: Date.now() + 10 * 60000 });
+    utools.showNotification(list().some(item => item.code === code) ? '好，十分钟后再提醒你。' : '未创建稍后提醒。');
   } catch (error) {
     utools.showNotification('稍后提醒创建失败：' + error.message);
   }
